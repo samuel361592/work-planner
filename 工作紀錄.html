@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Work Log | Work Tracker</title>
+
+  <style>
+    :root {
+      --bg-main: #0b1020;
+      --bg-card: rgba(15, 23, 42, 0.82);
+      --bg-input: rgba(2, 6, 23, 0.9);
+      --border: rgba(56, 189, 248, 0.22);
+      --border-focus: rgba(34, 211, 238, 0.9);
+      --text-main: #e5f3ff;
+      --text-muted: #94a3b8;
+      --cyan: #22d3ee;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --green: #22c55e;
+      --danger: #fb7185;
+      --shadow-cyan: 0 0 28px rgba(34, 211, 238, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Microsoft JhengHei", Arial, sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at top left, rgba(38, 132, 255, 0.16), transparent 32%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.14), transparent 32%),
+        var(--bg-main);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      display: none;
+    }
+
+    body::after {
+      display: none;
+    }
+
+    @keyframes scan {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      position: relative;
+      z-index: 1;
+    }
+
+    .sidebar {
+      background: rgba(15, 23, 42, 0.86);
+      border-right: 1px solid rgba(56, 189, 248, 0.18);
+      padding: 22px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 0 28px rgba(59, 130, 246, 0.28);
+    }
+
+    .brand-title {
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-sub {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav-title {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 22px 0 10px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      color: #cbd5e1;
+      cursor: pointer;
+      border: 1px solid transparent;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .nav-item.active,
+    .nav-item:hover {
+      background: rgba(34, 211, 238, 0.12);
+      border-color: rgba(34, 211, 238, 0.22);
+      color: #eaf3ff;
+    }
+
+    .stats {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .stat {
+      padding: 12px;
+      background: rgba(2, 6, 23, 0.38);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 12px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 16px;
+      color: var(--cyan);
+      line-height: 1.3;
+    }
+
+    .stat span {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 20px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(620px, 1.35fr) minmax(360px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .page {
+      width: min(980px, calc(100% - 32px));
+      margin: 48px auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tool-nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      animation: fadeDown 0.7s ease-out;
+    }
+
+    .tool-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 999px;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.74);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .tool-nav a:hover,
+    .tool-nav a.active {
+      color: #e0f2fe;
+      border-color: rgba(34, 211, 238, 0.58);
+      background: rgba(34, 211, 238, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 28px;
+      animation: fadeDown 0.7s ease-out;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--cyan);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      box-shadow: var(--shadow-cyan);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.35); }
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 4vw, 42px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      color: #e5eefc;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 780px;
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .shell {
+      position: relative;
+      padding: 1px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.7), rgba(139, 92, 246, 0.5), rgba(59, 130, 246, 0.25));
+      box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.45),
+        0 0 42px rgba(34, 211, 238, 0.12);
+      animation: fadeUp 0.75s ease-out;
+    }
+
+    .card {
+      border-radius: 24px;
+      padding: clamp(22px, 4vw, 36px);
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.96)),
+        var(--bg-card);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-text {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    form {
+      display: grid;
+      gap: 20px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .field {
+      position: relative;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: #cbd5e1;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .hint {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px 14px;
+      background: var(--bg-input);
+      color: var(--text-main);
+      outline: none;
+      font-size: 15px;
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease,
+        background 0.2s ease;
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08), 0 0 26px rgba(34, 211, 238, 0.14);
+      transform: translateY(-1px);
+      background: rgba(2, 6, 23, 0.96);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(148, 163, 184, 0.62);
+    }
+
+    select option {
+      background: #0f172a;
+      color: #e5f3ff;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.6);
+      opacity: 0.9;
+      cursor: pointer;
+      background-color: rgba(148, 163, 184, 0.16);
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      border-radius: 8px;
+      padding: 6px;
+      transition: all 0.2s ease;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+      background-color: rgba(34, 211, 238, 0.18);
+      border-color: rgba(34, 211, 238, 0.65);
+    }
+
+    .actions {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 18px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .submit-btn {
+      width: min(360px, 100%);
+      color: white;
+      background: linear-gradient(135deg, var(--cyan), var(--blue), var(--purple));
+      box-shadow: 0 14px 34px rgba(59, 130, 246, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 70%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      transform: skewX(-18deg);
+      transition: left 0.5s ease;
+    }
+
+    .submit-btn:hover::before {
+      left: 130%;
+    }
+
+    .submit-btn:hover,
+    .ghost-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .submit-btn:active,
+    .ghost-btn:active {
+      transform: translateY(0);
+      opacity: 0.82;
+    }
+
+    .ghost-btn {
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .config-note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 1px dashed rgba(34, 211, 238, 0.28);
+      border-radius: 14px;
+      color: var(--text-muted);
+      background: rgba(2, 6, 23, 0.5);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .log-section {
+      position: sticky;
+      top: 24px;
+    }
+
+    .log-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .log-toolbar h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .log-count {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .log-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .log-card {
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(2, 6, 23, 0.52);
+    }
+
+    .log-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .log-date {
+      font-weight: 900;
+      color: #e5eefc;
+    }
+
+    .log-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: flex-end;
+    }
+
+    .log-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.78);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .log-text {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .log-extra {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .log-extra strong {
+      color: #cbd5e1;
+    }
+
+    .log-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+
+    .log-action-btn {
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      letter-spacing: 0;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .log-action-btn.danger {
+      color: #fecdd3;
+      border-color: rgba(251, 113, 133, 0.28);
+      background: rgba(251, 113, 133, 0.12);
+    }
+
+    .empty-logs {
+      padding: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.22);
+      border-radius: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      background: rgba(2, 6, 23, 0.36);
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display: none;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 13px 15px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(56, 189, 248, 0.34);
+      color: #dbeafe;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+      z-index: 30;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .toast.success {
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.38);
+      background: rgba(6, 78, 59, 0.94);
+    }
+
+    .toast.error {
+      color: #fecdd3;
+      border-color: rgba(251, 113, 133, 0.4);
+      background: rgba(76, 5, 25, 0.94);
+    }
+
+    .toast.show {
+      display: block;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    code {
+      color: var(--cyan);
+      background: rgba(34, 211, 238, 0.1);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .footer {
+      text-align: center;
+      color: rgba(148, 163, 184, 0.68);
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        position: static;
+      }
+
+      .main {
+        padding: 16px;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .section-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .section-actions {
+        justify-content: flex-start;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .log-section {
+        position: static;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .submit-btn,
+      .ghost-btn {
+        width: 100%;
+      }
+
+      .log-card-head,
+      .log-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .log-meta {
+        justify-content: flex-start;
+      }
+
+      .log-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (min-width: 721px) and (max-width: 1280px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .log-section {
+        position: static;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">WP</div>
+        <div>
+          <div class="brand-title">Work Planner</div>
+          <div class="brand-sub">Local work board</div>
+        </div>
+      </div>
+
+      <div class="nav-title">Project</div>
+      <a class="nav-item" href="./工作排程.html">Board</a>
+      <div class="nav-item active">Work Log</div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar">
+        <div>
+          <h1>每日工作紀錄</h1>
+          <p class="subtitle">
+            用簡單表單記錄每天的工作內容，並同步寫入本機 Excel，方便未來整理週報與月報。
+          </p>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <section class="shell">
+          <div class="card">
+            <div class="section-title">
+              <h2>Work Log Input</h2>
+              <div class="section-actions">
+                <button class="ghost-btn" type="button" id="importExcelBtn">
+                  IMPORT LOCAL EXCEL
+                </button>
+                <button class="ghost-btn" type="button" id="exportExcelBtn">
+                  EXPORT LOCAL EXCEL
+                </button>
+                <button class="ghost-btn" type="button" id="resetBtn">
+                  RESET
+                </button>
+              </div>
+            </div>
+
+            <form id="workLogForm">
+              <div class="grid-2">
+                <div class="field">
+                  <label for="date">
+                    日期
+                    <span class="hint">必填</span>
+                  </label>
+                  <input id="date" type="date" name="date" required />
+                </div>
+
+                <div class="field">
+                  <label for="type">
+                    工作類型
+                    <span class="hint">必填</span>
+                  </label>
+                  <select id="type" name="type" required>
+                    <option value="">請選擇工作類型</option>
+                    <option value="Feature">Feature</option>
+                    <option value="Bug">Bug</option>
+                    <option value="Improvement">Improvement</option>
+                    <option value="API">API</option>
+                    <option value="Documentation">Documentation</option>
+                    <option value="Test">Test</option>
+                    <option value="Research">Research</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="hours">
+                  工作時數
+                  <span class="hint">例如：1、2.5、8</span>
+                </label>
+                <input
+                  id="hours"
+                  type="number"
+                  name="hours"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  placeholder="請輸入今天花在這項工作的時數"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="workDone">
+                  今天完成了什麼
+                  <span class="hint">口語描述即可</span>
+                </label>
+                <textarea
+                  id="workDone"
+                  name="work_done"
+                  placeholder="例如：完成 CRM 路順小管家的 Google Routes API 串接，並修正建議出發時間計算邏輯。"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="field">
+                <label for="problem">
+                  遇到的問題
+                  <span class="hint">沒有可填「無」</span>
+                </label>
+                <textarea
+                  id="problem"
+                  name="problem"
+                  placeholder="例如：API 回傳 400 Bad Request，初步判斷可能是 request payload 格式錯誤。"
+                ></textarea>
+              </div>
+
+              <div class="field">
+                <label for="solution">
+                  解法 / 處理方式
+                  <span class="hint">記錄 Debug 過程</span>
+                </label>
+                <textarea
+                  id="solution"
+                  name="solution"
+                  placeholder="例如：檢查 Google Routes API 文件後，調整 request body 格式並補上錯誤處理。"
+                ></textarea>
+              </div>
+
+              <div class="field">
+                <label for="tomorrow">
+                  明天要做什麼
+                  <span class="hint">方便隔天接續</span>
+                </label>
+                <textarea
+                  id="tomorrow"
+                  name="tomorrow"
+                  placeholder="例如：補上 workflow retry 機制，並測試通知 payload。"
+                ></textarea>
+              </div>
+
+              <div class="actions">
+                <button class="submit-btn" type="submit" id="submitBtn">
+                  SUBMIT WORK LOG
+                </button>
+                <input type="file" id="importExcelFile" accept=".xls,.xml,application/vnd.ms-excel,text/xml" style="display:none;" />
+              </div>
+
+              <div class="config-note">
+                若要直接寫入本機 Excel，請先執行 <code>工作紀錄工具.exe</code>。沒有 Excel 檔時會自動建立 <code>工作資料.xls</code>。
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="shell log-section">
+          <div class="card">
+            <div class="log-toolbar">
+              <h2>最近工作紀錄</h2>
+              <span class="log-count" id="logCount">0 筆紀錄</span>
+            </div>
+            <div class="log-list" id="logList"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const WORK_LOG_STORAGE_KEY = "daily_work_logs_v1";
+    const ISSUE_STORAGE_KEY = "jira_style_work_planner_v1";
+    const DESKTOP_EXCEL_ORIGIN = "http://localhost:8787";
+
+    const form = document.getElementById("workLogForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const importExcelBtn = document.getElementById("importExcelBtn");
+    const importExcelFile = document.getElementById("importExcelFile");
+    const exportExcelBtn = document.getElementById("exportExcelBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const dateInput = document.getElementById("date");
+    const logList = document.getElementById("logList");
+    const logCount = document.getElementById("logCount");
+    const toast = document.getElementById("toast");
+    let toastTimer = null;
+    let editingLogKey = "";
+
+    function getTodayString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function showToast(type, text) {
+      clearTimeout(toastTimer);
+      toast.className = "toast " + type + " show";
+      toast.textContent = text;
+      toastTimer = setTimeout(function() {
+        toast.classList.remove("show");
+      }, type === "error" ? 4200 : 2400);
+    }
+
+    function normalizeWorkType(type) {
+      return type === "AI Agent" || type === "AIAgent" || type === "Development" ? "Feature" : type;
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function buildPayload() {
+      const formData = new FormData(form);
+
+      return {
+        source: "work_log",
+        date: formData.get("date") || "",
+        type: normalizeWorkType(formData.get("type") || ""),
+        hours: formData.get("hours") || "",
+        work_done: formData.get("work_done") || "",
+        problem: formData.get("problem") || "",
+        solution: formData.get("solution") || "",
+        tomorrow: formData.get("tomorrow") || "",
+        submitted_at: new Date().toISOString()
+      };
+    }
+
+    function getLogKey(log, index) {
+      if (log.log_id) return log.log_id;
+      if (log.submitted_at) return log.submitted_at;
+      return [
+        log.submitted_at || "",
+        log.date || "",
+        log.type || "",
+        log.hours || "",
+        log.work_done || "",
+        index
+      ].join("|");
+    }
+
+    function loadArray(key) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function normalizeLog(log) {
+      return Object.assign({}, log, {
+        type: normalizeWorkType(log.type || "")
+      });
+    }
+
+    function getWorkLogs() {
+      return loadArray(WORK_LOG_STORAGE_KEY)
+        .map(function(log, index) {
+          return Object.assign(normalizeLog(log), { log_key: getLogKey(log, index) });
+        })
+        .sort(function(a, b) {
+          const dateA = a.date || "";
+          const dateB = b.date || "";
+          if (dateA !== dateB) return dateB.localeCompare(dateA);
+          return (b.submitted_at || "").localeCompare(a.submitted_at || "");
+        });
+    }
+
+    function renderWorkLogs() {
+      const logs = getWorkLogs();
+      logCount.textContent = logs.length > 20 ? "顯示最近 20 筆，共 " + logs.length + " 筆" : logs.length + " 筆紀錄";
+
+      if (!logs.length) {
+        logList.innerHTML = '<div class="empty-logs">目前還沒有工作紀錄。</div>';
+        return;
+      }
+
+      logList.innerHTML = logs.slice(0, 20).map(function(log) {
+        const problem = log.problem ? '<div><strong>問題：</strong>' + escapeHtml(log.problem) + '</div>' : "";
+        const solution = log.solution ? '<div><strong>解法：</strong>' + escapeHtml(log.solution) + '</div>' : "";
+        const tomorrow = log.tomorrow ? '<div><strong>明天：</strong>' + escapeHtml(log.tomorrow) + '</div>' : "";
+
+        return `
+          <article class="log-card">
+            <div class="log-card-head">
+              <div class="log-date">${escapeHtml(log.date || "未填日期")}</div>
+              <div class="log-meta">
+                <span class="log-pill">${escapeHtml(log.type || "Other")}</span>
+                <span class="log-pill">${escapeHtml(log.hours || "0")} hrs</span>
+              </div>
+            </div>
+            <p class="log-text">${escapeHtml(log.work_done || "尚未填寫完成內容。")}</p>
+            ${(problem || solution || tomorrow) ? '<div class="log-extra">' + problem + solution + tomorrow + '</div>' : ""}
+            <div class="log-actions">
+              <button class="log-action-btn" type="button" data-action="edit-log" data-log-key="${escapeHtml(log.log_key)}">Edit</button>
+              <button class="log-action-btn danger" type="button" data-action="delete-log" data-log-key="${escapeHtml(log.log_key)}">Delete</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function saveWorkLog(payload) {
+      const logs = loadArray(WORK_LOG_STORAGE_KEY).map(normalizeLog);
+      logs.push(payload);
+      localStorage.setItem(WORK_LOG_STORAGE_KEY, JSON.stringify(logs));
+      console.info("Saved local work log payload", payload);
+    }
+
+    function saveLogs(logs) {
+      localStorage.setItem(WORK_LOG_STORAGE_KEY, JSON.stringify(logs.map(normalizeLog)));
+    }
+
+    async function syncLogsToDesktopExcel(logs) {
+      if (!hasDesktopExcelApi()) return "browser";
+
+      try {
+        await desktopExcelApi("/api/work-logs", {
+          method: "POST",
+          body: JSON.stringify({ logs: logs.map(normalizeLog) })
+        });
+        return "desktop";
+      } catch (error) {
+        console.error(error);
+        showToast("error", "寫入桌面 Excel 失敗：" + error.message);
+        return "browser";
+      }
+    }
+
+    function resetEditMode() {
+      editingLogKey = "";
+      submitBtn.textContent = "SUBMIT WORK LOG";
+    }
+
+    function fillFormFromLog(log) {
+      dateInput.value = log.date || getTodayString();
+      form.elements.type.value = normalizeWorkType(log.type || "");
+      form.elements.hours.value = log.hours || "";
+      form.elements.work_done.value = log.work_done || "";
+      form.elements.problem.value = log.problem || "";
+      form.elements.solution.value = log.solution || "";
+      form.elements.tomorrow.value = log.tomorrow || "";
+    }
+
+    function findLogByKey(logKey) {
+      const logs = loadArray(WORK_LOG_STORAGE_KEY).map(normalizeLog);
+      const index = logs.findIndex(function(log, itemIndex) {
+        return getLogKey(log, itemIndex) === logKey;
+      });
+
+      return { logs: logs, index: index, log: index >= 0 ? logs[index] : null };
+    }
+
+    async function updateWorkLog(logKey, payload) {
+      const result = findLogByKey(logKey);
+      if (result.index < 0) {
+        throw new Error("找不到要更新的工作紀錄。");
+      }
+
+      result.logs[result.index] = Object.assign({}, result.logs[result.index], payload, {
+        submitted_at: result.logs[result.index].submitted_at || payload.submitted_at,
+        updated_at: new Date().toISOString()
+      });
+      saveLogs(result.logs);
+      return syncLogsToDesktopExcel(result.logs);
+    }
+
+    async function deleteWorkLog(logKey) {
+      const result = findLogByKey(logKey);
+      if (result.index < 0) {
+        throw new Error("找不到要刪除的工作紀錄。");
+      }
+
+      result.logs.splice(result.index, 1);
+      saveLogs(result.logs);
+      return syncLogsToDesktopExcel(result.logs);
+    }
+
+    function hasDesktopExcelApi() {
+      return location.protocol === "file:" ||
+        (location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname));
+    }
+
+    function desktopExcelUrl(path) {
+      if (location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname)) {
+        return path;
+      }
+
+      return DESKTOP_EXCEL_ORIGIN + path;
+    }
+
+    async function desktopExcelApi(path, options) {
+      const response = await fetch(desktopExcelUrl(path), Object.assign({
+        headers: { "Content-Type": "application/json" }
+      }, options || {}));
+
+      if (!response.ok) {
+        throw new Error("本機 Excel 服務錯誤：" + response.status);
+      }
+
+      return response.json();
+    }
+
+    async function saveWorkLogToStorage(payload) {
+      if (hasDesktopExcelApi()) {
+        try {
+          await desktopExcelApi("/api/work-log", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          saveWorkLog(payload);
+          return "desktop";
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      saveWorkLog(payload);
+      return "browser";
+    }
+
+    async function loadDesktopExcelData() {
+      if (!hasDesktopExcelApi()) return;
+
+      try {
+        const data = await desktopExcelApi("/api/data");
+        localStorage.setItem(WORK_LOG_STORAGE_KEY, JSON.stringify((data.logs || []).map(normalizeLog)));
+        localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(data.issues || []));
+        renderWorkLogs();
+        showToast("success", "已連線桌面 Excel：" + (data.excelPath || "工作資料.xls"));
+      } catch (error) {
+        showToast("error", "讀取桌面 Excel 失敗：" + error.message);
+      }
+    }
+
+    function xmlEscape(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&apos;");
+    }
+
+    function worksheetXml(name, headers, rows) {
+      const headerRow = "<Row>" + headers.map(function(header) {
+        return '<Cell><Data ss:Type="String">' + xmlEscape(header) + "</Data></Cell>";
+      }).join("") + "</Row>";
+
+      const dataRows = rows.map(function(row) {
+        return "<Row>" + row.map(function(cell) {
+          return '<Cell><Data ss:Type="String">' + xmlEscape(cell) + "</Data></Cell>";
+        }).join("") + "</Row>";
+      }).join("");
+
+      return '<Worksheet ss:Name="' + xmlEscape(name) + '"><Table>' + headerRow + dataRows + "</Table></Worksheet>";
+    }
+
+    function downloadLocalExcel() {
+      if (hasDesktopExcelApi()) {
+        window.location.href = desktopExcelUrl("/api/excel");
+        return;
+      }
+
+      const logs = loadArray(WORK_LOG_STORAGE_KEY);
+      const issues = loadArray(ISSUE_STORAGE_KEY);
+
+      const logRows = logs.map(function(log) {
+        return [
+          log.submitted_at || "",
+          log.date || "",
+          normalizeWorkType(log.type || ""),
+          log.hours || "",
+          log.work_done || "",
+          log.problem || "",
+          log.solution || "",
+          log.tomorrow || ""
+        ];
+      });
+
+      const issueRows = issues.map(function(issue) {
+        return [
+          issue.updatedAt || issue.createdAt || "",
+          issue.id || "",
+          issue.key || "",
+          issue.title || "",
+          normalizeWorkType(issue.type || ""),
+          issue.status || "",
+          issue.priority || "",
+          issue.epic || "",
+          issue.dueDate || "",
+          issue.description || "",
+          issue.acceptance || "",
+          issue.createdAt || "",
+          issue.updatedAt || ""
+        ];
+      });
+
+      const workbook = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<?mso-application progid="Excel.Sheet"?>',
+        '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">',
+        worksheetXml("總記錄", ["時間戳記", "日期", "工作類型", "工作時數", "今天完成了什麼", "遇到的問題", "解法", "明天要做什麼"], logRows),
+        worksheetXml("工作排程", ["同步時間", "內部ID", "Issue編號", "標題", "類型", "狀態", "優先度", "Epic", "到期日", "描述", "驗收條件", "建立時間", "更新時間"], issueRows),
+        "</Workbook>"
+      ].join("");
+
+      const blob = new Blob(["\uFEFF" + workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "工作資料.xls";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function parseWorkbookXml(text) {
+      const doc = new DOMParser().parseFromString(text, "text/xml");
+
+      if (doc.getElementsByTagName("parsererror").length) {
+        throw new Error("Excel 檔案格式不正確，請選擇本工具匯出的 .xls。");
+      }
+
+      function getSheetRows(sheetName) {
+        const sheets = Array.from(doc.getElementsByTagName("Worksheet"));
+        const sheet = sheets.find(function(item) {
+          return item.getAttribute("ss:Name") === sheetName ||
+                 item.getAttribute("Name") === sheetName ||
+                 item.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet", "Name") === sheetName;
+        });
+
+        if (!sheet) return [];
+
+        const rows = Array.from(sheet.getElementsByTagName("Row")).map(function(row) {
+          return Array.from(row.getElementsByTagName("Cell")).map(function(cell) {
+            const data = cell.getElementsByTagName("Data")[0];
+            return data ? data.textContent : "";
+          });
+        });
+
+        return rows.slice(1);
+      }
+
+      const logs = getSheetRows("總記錄").map(function(row) {
+        return {
+          source: "work_log",
+          submitted_at: row[0] || "",
+          date: row[1] || "",
+          type: normalizeWorkType(row[2] || ""),
+          hours: row[3] || "",
+          work_done: row[4] || "",
+          problem: row[5] || "",
+          solution: row[6] || "",
+          tomorrow: row[7] || ""
+        };
+      }).filter(function(log) {
+        return log.date || log.type || log.hours || log.work_done || log.problem || log.solution || log.tomorrow;
+      });
+
+      const issues = getSheetRows("工作排程").map(function(row) {
+        return {
+          id: row[1] || "",
+          key: row[2] || "",
+          title: row[3] || "",
+          type: normalizeWorkType(row[4] || "Other"),
+          status: row[5] || "Backlog",
+          priority: row[6] || "Medium",
+          epic: row.length >= 14 ? row[8] || "" : row[7] || "",
+          dueDate: row.length >= 14 ? row[9] || "" : row[8] || "",
+          description: row.length >= 14 ? row[10] || "" : row[9] || "",
+          acceptance: row.length >= 14 ? row[11] || "" : row[10] || "",
+          createdAt: row.length >= 14 ? row[12] || "" : row[11] || "",
+          updatedAt: row.length >= 14 ? row[13] || "" : row[12] || ""
+        };
+      }).filter(function(issue) {
+        return issue.id || issue.key || issue.title;
+      });
+
+      return { logs: logs, issues: issues };
+    }
+
+    function importLocalExcel(file) {
+      const reader = new FileReader();
+
+      reader.onload = function() {
+        try {
+          const data = parseWorkbookXml(reader.result);
+          localStorage.setItem(WORK_LOG_STORAGE_KEY, JSON.stringify(data.logs));
+          localStorage.setItem(ISSUE_STORAGE_KEY, JSON.stringify(data.issues));
+          renderWorkLogs();
+          showToast("success", "已讀入本機 Excel：總記錄 " + data.logs.length + " 筆，工作排程 " + data.issues.length + " 筆。");
+        } catch (error) {
+          showToast("error", "匯入失敗：" + error.message);
+        }
+      };
+
+      reader.readAsText(file, "utf-8");
+    }
+
+    dateInput.value = getTodayString();
+    renderWorkLogs();
+
+    resetBtn.addEventListener("click", function () {
+      form.reset();
+      dateInput.value = getTodayString();
+      resetEditMode();
+      showToast("success", "表單已重設。");
+    });
+
+    logList.addEventListener("click", async function(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+
+      const logKey = button.dataset.logKey;
+      const action = button.dataset.action;
+      const result = findLogByKey(logKey);
+
+      if (!result.log) {
+        showToast("error", "找不到這筆工作紀錄。");
+        renderWorkLogs();
+        return;
+      }
+
+      if (action === "edit-log") {
+        editingLogKey = logKey;
+        fillFormFromLog(result.log);
+        submitBtn.textContent = "UPDATE WORK LOG";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        showToast("success", "已載入工作紀錄，可直接修改後更新。");
+        return;
+      }
+
+      if (action === "delete-log") {
+        if (!confirm("確定要刪除這筆工作紀錄？")) return;
+
+        try {
+          const mode = await deleteWorkLog(logKey);
+          if (editingLogKey === logKey) {
+            form.reset();
+            dateInput.value = getTodayString();
+            resetEditMode();
+          }
+          renderWorkLogs();
+          showToast("success", mode === "desktop" ? "工作紀錄已刪除並同步 Excel。" : "工作紀錄已刪除。");
+        } catch (error) {
+          showToast("error", "刪除失敗：" + error.message);
+        }
+      }
+    });
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const payload = buildPayload();
+
+      submitBtn.disabled = true;
+	  submitBtn.textContent = editingLogKey ? "UPDATING..." : "SAVING...";
+
+	  try {
+
+	    const mode = editingLogKey ? await updateWorkLog(editingLogKey, payload) : await saveWorkLogToStorage(payload);
+	    renderWorkLogs();
+
+	    showToast("success", editingLogKey
+	      ? (mode === "desktop" ? "工作紀錄已更新並同步 Excel。" : "工作紀錄已更新。")
+	      : (mode === "desktop" ? "工作紀錄已寫入桌面 Excel。" : "工作紀錄已儲存在瀏覽器本機。可按 EXPORT LOCAL EXCEL 下載 Excel。"));
+
+	    form.reset();
+
+	    dateInput.value = getTodayString();
+	    resetEditMode();
+
+	  } catch (error) {
+
+	    console.error(error);
+
+	    showToast("error", "送出失敗：" + error.message);
+
+	  } finally {
+
+	    submitBtn.disabled = false;
+
+	    submitBtn.textContent = editingLogKey ? "UPDATE WORK LOG" : "SUBMIT WORK LOG";
+	  }
+    });
+
+    exportExcelBtn.addEventListener("click", function () {
+      downloadLocalExcel();
+      showToast("success", "已產生本機 Excel 檔。");
+    });
+
+    importExcelBtn.addEventListener("click", function () {
+      importExcelFile.click();
+    });
+
+    importExcelFile.addEventListener("change", function (event) {
+      const file = event.target.files[0];
+      if (file) importLocalExcel(file);
+      event.target.value = "";
+    });
+
+    loadDesktopExcelData();
+  </script>
+</body>
+</html>

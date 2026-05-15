@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Work Planner</title>
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel-2: #0f172a;
+      --card: #182235;
+      --card-hover: #1f2a40;
+      --border: #263348;
+      --border-light: #334155;
+      --text: #e5eefc;
+      --muted: #94a3b8;
+      --primary: #2684ff;
+      --primary-2: #1d4ed8;
+      --cyan: #22d3ee;
+      --green: #22c55e;
+      --yellow: #facc15;
+      --orange: #fb923c;
+      --red: #fb7185;
+      --purple: #a78bfa;
+      --shadow: 0 16px 40px rgba(0,0,0,.32);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Microsoft JhengHei", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(38,132,255,.16), transparent 32%),
+        radial-gradient(circle at top right, rgba(167,139,250,.14), transparent 32%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+    }
+
+    .sidebar {
+      background: rgba(15,23,42,.86);
+      border-right: 1px solid var(--border);
+      padding: 22px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      font-weight: 900;
+      box-shadow: 0 0 28px rgba(38,132,255,.28);
+    }
+
+    .brand-title {
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
+    .brand-sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 22px 0 10px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      color: #cbd5e1;
+      cursor: pointer;
+      border: 1px solid transparent;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .nav-item.active,
+    .nav-item:hover {
+      background: rgba(38,132,255,.12);
+      border-color: rgba(38,132,255,.22);
+      color: #eaf3ff;
+    }
+
+    .stats {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .stat {
+      padding: 12px;
+      background: rgba(2,6,23,.38);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 22px;
+      color: var(--cyan);
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 4vw, 42px);
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 780px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: end;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      color: white;
+      background: var(--primary);
+      transition: transform .15s ease, opacity .15s ease, background .15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: var(--primary-2);
+    }
+
+    button.secondary {
+      color: #cbd5e1;
+      background: rgba(15,23,42,.94);
+      border: 1px solid var(--border-light);
+    }
+
+    button.danger {
+      color: #fecdd3;
+      background: rgba(251,113,133,.14);
+      border: 1px solid rgba(251,113,133,.28);
+    }
+
+    button.small {
+      font-size: 12px;
+      padding: 7px 9px;
+      border-radius: 8px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.5fr .8fr .8fr .8fr auto;
+      gap: 12px;
+      margin-bottom: 18px;
+      background: rgba(15,23,42,.58);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(2,6,23,.68);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(38,132,255,.15);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #64748b;
+    }
+
+    select option {
+      background: #0f172a;
+      color: var(--text);
+    }
+
+    input[type="date"] {
+      color-scheme: dark;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(240px, 1fr));
+      gap: 16px;
+      align-items: start;
+      overflow-x: auto;
+      padding-bottom: 12px;
+    }
+
+    .column {
+      min-height: 620px;
+      background: rgba(15,23,42,.68);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .column.drag-over {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(38,132,255,.16);
+    }
+
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      background: rgba(2,6,23,.42);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .column-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 900;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .todo { color: #94a3b8; }
+    .progress { color: var(--primary); }
+    .done { color: var(--green); }
+
+    .count {
+      min-width: 26px;
+      text-align: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(15,23,42,.8);
+      border: 1px solid var(--border-light);
+    }
+
+    .task-list {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      min-height: 560px;
+    }
+
+    .issue-card {
+      background: var(--card);
+      border: 1px solid rgba(148,163,184,.15);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: grab;
+      box-shadow: 0 10px 24px rgba(0,0,0,.22);
+      transition: transform .14s ease, border-color .14s ease, background .14s ease;
+    }
+
+    .issue-card:hover {
+      transform: translateY(-2px);
+      background: var(--card-hover);
+      border-color: rgba(38,132,255,.34);
+    }
+
+    .issue-card.dragging {
+      opacity: .5;
+      transform: rotate(1deg) scale(.98);
+    }
+
+    .issue-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+
+    .issue-key {
+      color: var(--primary);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+
+    .issue-title {
+      margin: 0 0 10px;
+      line-height: 1.45;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+
+    .issue-desc {
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.55;
+      margin: 0 0 12px;
+      white-space: pre-wrap;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #cbd5e1;
+      background: rgba(15,23,42,.78);
+      border: 1px solid rgba(148,163,184,.18);
+    }
+
+    .type-Feature { color: #bae6fd; border-color: rgba(34,211,238,.28); background: rgba(34,211,238,.1); }
+    .type-Bug { color: #fecdd3; border-color: rgba(251,113,133,.28); background: rgba(251,113,133,.1); }
+    .type-Improvement { color: #bbf7d0; border-color: rgba(34,197,94,.28); background: rgba(34,197,94,.1); }
+    .type-API { color: #bfdbfe; border-color: rgba(59,130,246,.28); background: rgba(59,130,246,.1); }
+    .type-Documentation { color: #ddd6fe; border-color: rgba(167,139,250,.28); background: rgba(167,139,250,.1); }
+    .type-Test { color: #fde68a; border-color: rgba(250,204,21,.28); background: rgba(250,204,21,.1); }
+    .type-Research { color: #fed7aa; border-color: rgba(251,146,60,.28); background: rgba(251,146,60,.1); }
+    .type-Other { color: #cbd5e1; }
+
+    .priority-Highest,
+    .priority-High {
+      color: #fecdd3;
+      border-color: rgba(251,113,133,.35);
+      background: rgba(251,113,133,.12);
+    }
+
+    .priority-Medium {
+      color: #fed7aa;
+      border-color: rgba(251,146,60,.35);
+      background: rgba(251,146,60,.12);
+    }
+
+    .priority-Low {
+      color: #bbf7d0;
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.12);
+    }
+
+    .issue-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148,163,184,.13);
+    }
+
+    .assignee {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      color: white;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(2,6,23,.72);
+      z-index: 20;
+      padding: 20px;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: min(860px, calc(100vh - 40px));
+      overflow: auto;
+      background: #111827;
+      border: 1px solid var(--border-light);
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.56);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(2,6,23,.32);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .modal-body {
+      display: grid;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .empty {
+      padding: 18px;
+      border: 1px dashed rgba(148,163,184,.2);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display: none;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(15,23,42,.96);
+      border: 1px solid var(--border-light);
+      color: #dbeafe;
+      box-shadow: var(--shadow);
+      z-index: 30;
+    }
+
+    .toast.show {
+      display: block;
+      animation: toastIn .2s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        position: static;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .board {
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .main {
+        padding: 16px;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .top-actions {
+        justify-content: start;
+      }
+
+      .toolbar,
+      .board,
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .column {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">WP</div>
+        <div>
+          <div class="brand-title">Work Planner</div>
+          <div class="brand-sub">Local work board</div>
+        </div>
+      </div>
+
+      <div class="nav-title">Project</div>
+      <div class="nav-item active">Board</div>
+      <a class="nav-item" href="./工作紀錄.html">Work Log</a>
+
+      <div class="nav-title">Summary</div>
+      <div class="stats">
+        <div class="stat">
+          <strong id="statIssues">0</strong>
+          <span>Total issues</span>
+        </div>
+        <div class="stat">
+          <strong id="statDone">0%</strong>
+          <span>Done rate</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar">
+        <div>
+          <h1>工作排程看板</h1>
+          <p class="subtitle">
+            本機任務管理。支援拖曳狀態、Issue Key、優先度、Epic、搜尋與篩選。資料存在瀏覽器 localStorage。
+          </p>
+        </div>
+
+        <div class="top-actions">
+          <button id="newIssueBtn">＋ Create Issue</button>
+          <button class="secondary" id="importExcelBtn">Import Local Excel</button>
+          <button class="secondary" id="syncBtn">Export Local Excel</button>
+          <button class="secondary" id="exportBtn">Export JSON</button>
+          <button class="secondary" id="importBtn">Import JSON</button>
+          <button class="danger" id="clearBtn">Clear</button>
+          <input type="file" id="importExcelFile" accept=".xls,.xml,application/vnd.ms-excel,text/xml" style="display:none;" />
+          <input type="file" id="importFile" accept="application/json" style="display:none;" />
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <input id="searchInput" placeholder="搜尋 issue key、標題、描述..." />
+        <select id="typeFilter">
+          <option value="">全部類型</option>
+          <option value="Feature">Feature</option>
+          <option value="Bug">Bug</option>
+          <option value="Improvement">Improvement</option>
+          <option value="API">API</option>
+          <option value="Documentation">Documentation</option>
+          <option value="Test">Test</option>
+          <option value="Research">Research</option>
+          <option value="Other">Other</option>
+        </select>
+        <select id="priorityFilter">
+          <option value="">全部優先度</option>
+          <option value="Highest">Highest</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <select id="epicFilter">
+          <option value="">全部 Epic</option>
+        </select>
+        <button class="secondary" id="resetFilterBtn">Reset Filter</button>
+      </section>
+
+      <section class="board">
+        <div class="column" data-status="Backlog">
+          <div class="column-header">
+            <div class="column-title todo"><span class="dot"></span>Backlog</div>
+            <span class="count" id="countBacklog">0</span>
+          </div>
+          <div class="task-list" id="listBacklog"></div>
+        </div>
+
+        <div class="column" data-status="To Do">
+          <div class="column-header">
+            <div class="column-title todo"><span class="dot"></span>To Do</div>
+            <span class="count" id="countToDo">0</span>
+          </div>
+          <div class="task-list" id="listToDo"></div>
+        </div>
+
+        <div class="column" data-status="In Progress">
+          <div class="column-header">
+            <div class="column-title progress"><span class="dot"></span>In Progress</div>
+            <span class="count" id="countInProgress">0</span>
+          </div>
+          <div class="task-list" id="listInProgress"></div>
+        </div>
+
+        <div class="column" data-status="Done">
+          <div class="column-header">
+            <div class="column-title done"><span class="dot"></span>Done</div>
+            <span class="count" id="countDone">0</span>
+          </div>
+          <div class="task-list" id="listDone"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Create Issue</h2>
+        <button class="secondary small" id="closeModalBtn">Close</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="editId" />
+
+        <div>
+          <label>Summary</label>
+          <input id="issueTitle" placeholder="例如：修正路順小管家的建議出發時間邏輯" />
+        </div>
+
+        <div class="form-grid-2">
+          <div>
+            <label>Issue Type</label>
+            <select id="issueType">
+              <option value="Feature">Feature</option>
+              <option value="Bug">Bug</option>
+              <option value="Improvement">Improvement</option>
+              <option value="API">API</option>
+              <option value="Documentation">Documentation</option>
+              <option value="Test">Test</option>
+              <option value="Research">Research</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Status</label>
+            <select id="issueStatus">
+              <option value="Backlog">Backlog</option>
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div>
+            <label>Priority</label>
+            <select id="issuePriority">
+              <option value="Highest">Highest</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Due Date</label>
+            <input id="issueDueDate" type="date" />
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div>
+            <label>Epic</label>
+            <input id="issueEpic" placeholder="例如：CRM Route Planning" />
+          </div>
+        </div>
+
+        <div>
+          <label>Description</label>
+          <textarea id="issueDescription" placeholder="描述要做什麼、為什麼要做、需要注意什麼。"></textarea>
+        </div>
+
+        <div>
+          <label>Acceptance Criteria</label>
+          <textarea id="issueAcceptance" placeholder="例如：API payload 正確、測試案例通過、文件更新完成。"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="secondary" id="cancelBtn">Cancel</button>
+        <button id="saveIssueBtn">Save Issue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "jira_style_work_planner_v1";
+    const WORK_LOG_STORAGE_KEY = "daily_work_logs_v1";
+    const DESKTOP_EXCEL_ORIGIN = "http://localhost:8787";
+    const STATUS_LIST = ["Backlog", "To Do", "In Progress", "Done"];
+
+    let issues = loadIssues();
+    let draggedId = null;
+
+    const els = {
+      newIssueBtn: document.getElementById("newIssueBtn"),
+      importExcelBtn: document.getElementById("importExcelBtn"),
+      importExcelFile: document.getElementById("importExcelFile"),
+      syncBtn: document.getElementById("syncBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      importBtn: document.getElementById("importBtn"),
+      importFile: document.getElementById("importFile"),
+      clearBtn: document.getElementById("clearBtn"),
+      modalBackdrop: document.getElementById("modalBackdrop"),
+      modalTitle: document.getElementById("modalTitle"),
+      closeModalBtn: document.getElementById("closeModalBtn"),
+      cancelBtn: document.getElementById("cancelBtn"),
+      saveIssueBtn: document.getElementById("saveIssueBtn"),
+      editId: document.getElementById("editId"),
+      issueTitle: document.getElementById("issueTitle"),
+      issueType: document.getElementById("issueType"),
+      issueStatus: document.getElementById("issueStatus"),
+      issuePriority: document.getElementById("issuePriority"),
+      issueEpic: document.getElementById("issueEpic"),
+      issueDueDate: document.getElementById("issueDueDate"),
+      issueDescription: document.getElementById("issueDescription"),
+      issueAcceptance: document.getElementById("issueAcceptance"),
+      searchInput: document.getElementById("searchInput"),
+      typeFilter: document.getElementById("typeFilter"),
+      priorityFilter: document.getElementById("priorityFilter"),
+      epicFilter: document.getElementById("epicFilter"),
+      resetFilterBtn: document.getElementById("resetFilterBtn"),
+      toast: document.getElementById("toast")
+    };
+
+    function normalizeIssueType(type) {
+      return type === "AIAgent" || type === "AI Agent" || type === "Development" ? "Feature" : type;
+    }
+
+    function normalizeStatus(status) {
+      if (status === "Review") return "To Do";
+      return STATUS_LIST.includes(status) ? status : "Backlog";
+    }
+
+    function normalizeIssue(issue) {
+      return Object.assign({}, issue, {
+        type: normalizeIssueType(issue.type || "Other"),
+        status: normalizeStatus(issue.status || "Backlog")
+      });
+    }
+
+    function loadIssues() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return Array.isArray(data) ? data.map(normalizeIssue) : seedIssues();
+      } catch (error) {
+        return seedIssues();
+      }
+    }
+
+    function seedIssues() {
+      return [
+        {
+          id: createId(),
+          key: "WORK-1",
+          title: "規劃 CRM 路順小管家 workflow",
+          type: "Feature",
+          status: "Backlog",
+          priority: "Medium",
+          epic: "CRM Workflow",
+          dueDate: "",
+          description: "整理使用者輸入、日期條件、待修資料查詢與路順計算流程。",
+          acceptance: "完成流程拆解，確認每個節點輸入輸出。",
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: createId(),
+          key: "WORK-2",
+          title: "測試 Google Routes API 建議出發時間",
+          type: "API",
+          status: "In Progress",
+          priority: "High",
+          epic: "Route Planning",
+          dueDate: "",
+          description: "驗證不同地址與維修時間下的出發時間計算結果。",
+          acceptance: "至少完成 5 組測試資料，並記錄異常案例。",
+          createdAt: new Date().toISOString()
+        }
+      ];
+    }
+
+    function saveIssues() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
+      syncIssuesToDesktopExcel();
+    }
+
+    function hasDesktopExcelApi() {
+      return location.protocol === "file:" ||
+        (location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname));
+    }
+
+    function desktopExcelUrl(path) {
+      if (location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname)) {
+        return path;
+      }
+
+      return DESKTOP_EXCEL_ORIGIN + path;
+    }
+
+    async function desktopExcelApi(path, options) {
+      const response = await fetch(desktopExcelUrl(path), Object.assign({
+        headers: { "Content-Type": "application/json" }
+      }, options || {}));
+
+      if (!response.ok) {
+        throw new Error("本機 Excel 服務錯誤：" + response.status);
+      }
+
+      return response.json();
+    }
+
+    function syncIssuesToDesktopExcel() {
+      if (!hasDesktopExcelApi()) return;
+
+      desktopExcelApi("/api/issues", {
+        method: "POST",
+        body: JSON.stringify({ issues: issues })
+      }).catch(function(error) {
+        console.error(error);
+        showToast("寫入桌面 Excel 失敗：" + error.message);
+      });
+    }
+
+    async function loadDesktopExcelData() {
+      if (!hasDesktopExcelApi()) return;
+
+      try {
+        const data = await desktopExcelApi("/api/data");
+        localStorage.setItem(WORK_LOG_STORAGE_KEY, JSON.stringify(data.logs || []));
+        if (Array.isArray(data.issues) && data.issues.length) {
+          issues = data.issues.map(normalizeIssue);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
+          render();
+        }
+        showToast("已連線桌面 Excel");
+      } catch (error) {
+        showToast("讀取桌面 Excel 失敗：" + error.message);
+      }
+    }
+
+    function createId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function nextKey() {
+      let max = 0;
+      issues.forEach(function(issue) {
+        const match = String(issue.key || "").match(/WORK-(\d+)/);
+        if (match) max = Math.max(max, Number(match[1]));
+      });
+      return "WORK-" + (max + 1);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showToast(text) {
+      els.toast.textContent = text;
+      els.toast.classList.add("show");
+      setTimeout(function() {
+        els.toast.classList.remove("show");
+      }, 1800);
+    }
+
+    function openModal(issue) {
+      const isEdit = Boolean(issue);
+      els.modalTitle.textContent = isEdit ? "Edit Issue" : "Create Issue";
+      els.editId.value = isEdit ? issue.id : "";
+      els.issueTitle.value = isEdit ? issue.title : "";
+      els.issueType.value = isEdit ? normalizeIssueType(issue.type) : "Feature";
+      els.issueStatus.value = isEdit ? normalizeStatus(issue.status) : "Backlog";
+      els.issuePriority.value = isEdit ? issue.priority : "Medium";
+      els.issueEpic.value = isEdit ? issue.epic : "";
+      els.issueDueDate.value = isEdit ? issue.dueDate : "";
+      els.issueDescription.value = isEdit ? issue.description : "";
+      els.issueAcceptance.value = isEdit ? issue.acceptance : "";
+      els.modalBackdrop.classList.add("open");
+      setTimeout(function() {
+        els.issueTitle.focus();
+      }, 30);
+    }
+
+    function closeModal() {
+      els.modalBackdrop.classList.remove("open");
+    }
+
+    function saveIssue() {
+      const title = els.issueTitle.value.trim();
+
+      if (!title) {
+        showToast("請輸入 Summary");
+        return;
+      }
+
+      const editId = els.editId.value;
+      const payload = {
+        title: title,
+        type: normalizeIssueType(els.issueType.value),
+        status: normalizeStatus(els.issueStatus.value),
+        priority: els.issuePriority.value,
+        epic: els.issueEpic.value.trim(),
+        dueDate: els.issueDueDate.value,
+        description: els.issueDescription.value.trim(),
+        acceptance: els.issueAcceptance.value.trim()
+      };
+
+      if (editId) {
+        issues = issues.map(function(issue) {
+          if (issue.id === editId) {
+            return Object.assign({}, issue, payload, { updatedAt: new Date().toISOString() });
+          }
+          return issue;
+        });
+        showToast("Issue 已更新");
+      } else {
+        issues.unshift(Object.assign({
+          id: createId(),
+          key: nextKey(),
+          createdAt: new Date().toISOString()
+        }, payload));
+        showToast("Issue 已建立");
+      }
+
+      saveIssues();
+      render();
+      closeModal();
+    }
+
+    function deleteIssue(id) {
+      if (!confirm("確定要刪除此 issue？")) return;
+      issues = issues.filter(function(issue) {
+        return issue.id !== id;
+      });
+      saveIssues();
+      render();
+      showToast("Issue 已刪除");
+    }
+
+    function moveIssue(id, status) {
+      issues = issues.map(function(issue) {
+        if (issue.id === id) {
+          return Object.assign({}, issue, { status: status, updatedAt: new Date().toISOString() });
+        }
+        return issue;
+      });
+      saveIssues();
+      render();
+    }
+
+    function getFilteredIssues() {
+      const q = els.searchInput.value.trim().toLowerCase();
+      const type = els.typeFilter.value;
+      const priority = els.priorityFilter.value;
+      const epic = els.epicFilter.value;
+
+      return issues.filter(function(issue) {
+        const text = [
+          issue.key,
+          issue.title,
+          issue.description,
+          issue.acceptance,
+          issue.epic
+        ].join(" ").toLowerCase();
+
+        return (!q || text.includes(q)) &&
+               (!type || issue.type === type) &&
+               (!priority || issue.priority === priority) &&
+               (!epic || issue.epic === epic);
+      });
+    }
+
+    function renderIssue(issue) {
+      const desc = issue.description ? escapeHtml(issue.description) : "尚未填寫 Description。";
+      const due = issue.dueDate ? "Due " + issue.dueDate : "No due date";
+      const epic = issue.epic ? issue.epic : "No epic";
+
+      return `
+        <article class="issue-card" draggable="true" data-id="${issue.id}">
+          <div class="issue-top">
+            <span class="issue-key">${escapeHtml(issue.key)}</span>
+            <span class="pill priority-${escapeHtml(issue.priority)}">${escapeHtml(issue.priority)}</span>
+          </div>
+
+          <p class="issue-title">${escapeHtml(issue.title)}</p>
+
+          <div class="meta-row">
+            <span class="pill type-${escapeHtml(issue.type)}">${escapeHtml(issue.type)}</span>
+            <span class="pill">${escapeHtml(epic)}</span>
+            <span class="pill">${escapeHtml(due)}</span>
+          </div>
+
+          <p class="issue-desc">${desc}</p>
+
+          <div class="issue-footer">
+            <div class="assignee">
+              <span class="avatar">ME</span>
+              <span>Chen 77</span>
+            </div>
+            <div class="card-actions">
+              <button class="secondary small" onclick="editIssue('${issue.id}')">Edit</button>
+              <button class="danger small" onclick="deleteIssue('${issue.id}')">Del</button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderEpicFilter() {
+      const current = els.epicFilter.value;
+      const epics = Array.from(new Set(issues.map(function(i) { return i.epic; }).filter(Boolean))).sort();
+
+      els.epicFilter.innerHTML = '<option value="">全部 Epic</option>' + epics.map(function(epic) {
+        return '<option value="' + escapeHtml(epic) + '">' + escapeHtml(epic) + '</option>';
+      }).join("");
+
+      if (epics.includes(current)) {
+        els.epicFilter.value = current;
+      }
+    }
+
+    function renderStats(filtered) {
+      const total = issues.length;
+      const done = issues.filter(function(issue) {
+        return issue.status === "Done";
+      }).length;
+
+      document.getElementById("statIssues").textContent = total;
+      document.getElementById("statDone").textContent = total ? Math.round(done / total * 100) + "%" : "0%";
+    }
+
+    function render() {
+      renderEpicFilter();
+
+      const filtered = getFilteredIssues();
+
+      STATUS_LIST.forEach(function(status) {
+        const id = status.replace(/\s/g, "");
+        const list = document.getElementById("list" + id);
+        const count = document.getElementById("count" + id);
+        const items = filtered.filter(function(issue) {
+          return issue.status === status;
+        });
+
+        count.textContent = items.length;
+        list.innerHTML = items.length ? items.map(renderIssue).join("") : '<div class="empty">No issues</div>';
+      });
+
+      renderStats(filtered);
+      bindDragEvents();
+    }
+
+    function bindDragEvents() {
+      document.querySelectorAll(".issue-card").forEach(function(card) {
+        card.addEventListener("dragstart", function(e) {
+          draggedId = card.dataset.id;
+          card.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+        });
+
+        card.addEventListener("dragend", function() {
+          card.classList.remove("dragging");
+          draggedId = null;
+        });
+      });
+    }
+
+    document.querySelectorAll(".column").forEach(function(column) {
+      column.addEventListener("dragover", function(e) {
+        e.preventDefault();
+        column.classList.add("drag-over");
+      });
+
+      column.addEventListener("dragleave", function() {
+        column.classList.remove("drag-over");
+      });
+
+      column.addEventListener("drop", function(e) {
+        e.preventDefault();
+        column.classList.remove("drag-over");
+
+        if (draggedId) {
+          moveIssue(draggedId, column.dataset.status);
+          showToast("狀態已更新為 " + column.dataset.status);
+        }
+      });
+    });
+
+    function editIssue(id) {
+      const issue = issues.find(function(item) {
+        return item.id === id;
+      });
+      if (issue) openModal(issue);
+    }
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(issues, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "work-planner-issues.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("JSON 已匯出");
+    }
+
+    function loadArray(key) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function xmlEscape(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&apos;");
+    }
+
+    function worksheetXml(name, headers, rows) {
+      const headerRow = "<Row>" + headers.map(function(header) {
+        return '<Cell><Data ss:Type="String">' + xmlEscape(header) + "</Data></Cell>";
+      }).join("") + "</Row>";
+
+      const dataRows = rows.map(function(row) {
+        return "<Row>" + row.map(function(cell) {
+          return '<Cell><Data ss:Type="String">' + xmlEscape(cell) + "</Data></Cell>";
+        }).join("") + "</Row>";
+      }).join("");
+
+      return '<Worksheet ss:Name="' + xmlEscape(name) + '"><Table>' + headerRow + dataRows + "</Table></Worksheet>";
+    }
+
+    function exportLocalExcel() {
+      if (hasDesktopExcelApi()) {
+        window.location.href = desktopExcelUrl("/api/excel");
+        return;
+      }
+
+      const originalText = els.syncBtn.textContent;
+
+      els.syncBtn.disabled = true;
+      els.syncBtn.textContent = "Exporting...";
+
+      try {
+        const logs = loadArray(WORK_LOG_STORAGE_KEY);
+
+        const logRows = logs.map(function(log) {
+          return [
+            log.submitted_at || "",
+            log.date || "",
+            log.type || "",
+            log.hours || "",
+            log.work_done || "",
+            log.problem || "",
+            log.solution || "",
+            log.tomorrow || ""
+          ];
+        });
+
+        const issueRows = issues.map(function(issue) {
+          return [
+            issue.updatedAt || issue.createdAt || "",
+            issue.id || "",
+            issue.key || "",
+            issue.title || "",
+            issue.type || "",
+            issue.status || "",
+            issue.priority || "",
+            issue.epic || "",
+            issue.dueDate || "",
+            issue.description || "",
+            issue.acceptance || "",
+            issue.createdAt || "",
+            issue.updatedAt || ""
+          ];
+        });
+
+        const workbook = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+          '<?mso-application progid="Excel.Sheet"?>',
+          '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">',
+          worksheetXml("總記錄", ["時間戳記", "日期", "工作類型", "工作時數", "今天完成了什麼", "遇到的問題", "解法", "明天要做什麼"], logRows),
+          worksheetXml("工作排程", ["同步時間", "內部ID", "Issue編號", "標題", "類型", "狀態", "優先度", "Epic", "到期日", "描述", "驗收條件", "建立時間", "更新時間"], issueRows),
+          "</Workbook>"
+        ].join("");
+
+      const blob = new Blob(["\uFEFF" + workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "工作資料.xls";
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast("本機 Excel 已產生");
+      } catch (error) {
+        showToast("匯出失敗：" + error.message);
+      } finally {
+        els.syncBtn.disabled = false;
+        els.syncBtn.textContent = originalText;
+      }
+    }
+
+    function parseWorkbookXml(text) {
+      const doc = new DOMParser().parseFromString(text, "text/xml");
+
+      if (doc.getElementsByTagName("parsererror").length) {
+        throw new Error("Excel 檔案格式不正確，請選擇本工具匯出的 .xls。");
+      }
+
+      function getSheetRows(sheetName) {
+        const sheets = Array.from(doc.getElementsByTagName("Worksheet"));
+        const sheet = sheets.find(function(item) {
+          return item.getAttribute("ss:Name") === sheetName ||
+                 item.getAttribute("Name") === sheetName ||
+                 item.getAttributeNS("urn:schemas-microsoft-com:office:spreadsheet", "Name") === sheetName;
+        });
+
+        if (!sheet) return [];
+
+        const rows = Array.from(sheet.getElementsByTagName("Row")).map(function(row) {
+          return Array.from(row.getElementsByTagName("Cell")).map(function(cell) {
+            const data = cell.getElementsByTagName("Data")[0];
+            return data ? data.textContent : "";
+          });
+        });
+
+        return rows.slice(1);
+      }
+
+      const logs = getSheetRows("總記錄").map(function(row) {
+        return {
+          source: "work_log",
+          submitted_at: row[0] || "",
+          date: row[1] || "",
+          type: row[2] || "",
+          hours: row[3] || "",
+          work_done: row[4] || "",
+          problem: row[5] || "",
+          solution: row[6] || "",
+          tomorrow: row[7] || ""
+        };
+      }).filter(function(log) {
+        return log.date || log.type || log.hours || log.work_done || log.problem || log.solution || log.tomorrow;
+      });
+
+      const importedIssues = getSheetRows("工作排程").map(function(row) {
+        return {
+          id: row[1] || createId(),
+          key: row[2] || nextKey(),
+          title: row[3] || "",
+          type: normalizeIssueType(row[4] || "Other"),
+          status: normalizeStatus(row[5] || "Backlog"),
+          priority: row[6] || "Medium",
+          epic: row.length >= 14 ? row[8] || "" : row[7] || "",
+          dueDate: row.length >= 14 ? row[9] || "" : row[8] || "",
+          description: row.length >= 14 ? row[10] || "" : row[9] || "",
+          acceptance: row.length >= 14 ? row[11] || "" : row[10] || "",
+          createdAt: row.length >= 14 ? row[12] || new Date().toISOString() : row[11] || new Date().toISOString(),
+          updatedAt: row.length >= 14 ? row[13] || "" : row[12] || ""
+        };
+      }).filter(function(issue) {
+        return issue.key || issue.title;
+      });
+
+      return { logs: logs, issues: importedIssues };
+    }
+
+    function importLocalExcel(file) {
+      const reader = new FileReader();
+
+      reader.onload = function() {
+        try {
+          const data = parseWorkbookXml(reader.result);
+          localStorage.setItem(WORK_LOG_STORAGE_KEY, JSON.stringify(data.logs));
+          issues = data.issues.map(normalizeIssue);
+          saveIssues();
+          render();
+          showToast("已讀入本機 Excel：總記錄 " + data.logs.length + " 筆，工作排程 " + data.issues.length + " 筆");
+        } catch (error) {
+          showToast("匯入失敗：" + error.message);
+        }
+      };
+
+      reader.readAsText(file, "utf-8");
+    }
+
+    function importJson(file) {
+      const reader = new FileReader();
+      reader.onload = function() {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!Array.isArray(data)) throw new Error("JSON 格式必須是陣列");
+          issues = data.map(normalizeIssue);
+          saveIssues();
+          render();
+          showToast("JSON 已匯入");
+        } catch (error) {
+          showToast("匯入失敗：" + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    els.newIssueBtn.addEventListener("click", function() { openModal(null); });
+    els.closeModalBtn.addEventListener("click", closeModal);
+    els.cancelBtn.addEventListener("click", closeModal);
+    els.saveIssueBtn.addEventListener("click", saveIssue);
+    els.modalBackdrop.addEventListener("click", function(e) {
+      if (e.target === els.modalBackdrop) closeModal();
+    });
+
+    els.searchInput.addEventListener("input", render);
+    els.typeFilter.addEventListener("change", render);
+    els.priorityFilter.addEventListener("change", render);
+    els.epicFilter.addEventListener("change", render);
+    els.resetFilterBtn.addEventListener("click", function() {
+      els.searchInput.value = "";
+      els.typeFilter.value = "";
+      els.priorityFilter.value = "";
+      els.epicFilter.value = "";
+      render();
+    });
+
+    els.exportBtn.addEventListener("click", exportJson);
+    els.syncBtn.addEventListener("click", exportLocalExcel);
+    els.importExcelBtn.addEventListener("click", function() {
+      els.importExcelFile.click();
+    });
+    els.importExcelFile.addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) importLocalExcel(file);
+      e.target.value = "";
+    });
+    els.importBtn.addEventListener("click", function() {
+      els.importFile.click();
+    });
+    els.importFile.addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) importJson(file);
+      e.target.value = "";
+    });
+
+    els.clearBtn.addEventListener("click", function() {
+      if (!confirm("確定要清空所有本機 issues？")) return;
+      issues = [];
+      saveIssues();
+      render();
+      showToast("本機資料已清空");
+    });
+
+    window.editIssue = editIssue;
+    window.deleteIssue = deleteIssue;
+
+    render();
+    loadDesktopExcelData();
+  </script>
+</body>
+</html>

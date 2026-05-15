@@ -1,0 +1,5 @@
+工作資料.xls
+*.exe
+node_modules/
+.DS_Store
+Thumbs.db
